@@ -43,6 +43,8 @@ class BaseLIME:
     def _highest_weights(self, data, labels, weights, num_features):
         penalty = (self.alpha_penalty if self.alpha_penalty else 0.01)  # try different alpha?
         clf = Ridge(alpha=penalty, fit_intercept=True, random_state=self.random_state)
+        print('data', data.shape)
+        print('labels', labels.shape)
         clf.fit(data, labels, sample_weight=weights)
         coef = clf.coef_
         if sp.sparse.issparse(data):

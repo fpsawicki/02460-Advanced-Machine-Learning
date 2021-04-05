@@ -5,6 +5,7 @@ from explainers import ImageExplainer
 import numpy as np
 
 from sklearn.metrics import pairwise_distances
+from skimage.color import rgb2gray
 
 
 class ImageLIME(BaseLIME):
@@ -38,17 +39,20 @@ class ImageLIME(BaseLIME):
             self.segmentation_fn = QuickShift(
                 kernel_size=4, max_dist=200, ratio=0.2, random_seed=random_state)
         msg = 'Invalid segmentation type, use one implemented in segmentations.py'
-        assert issubclass(segmentation, Segmentation), msg
+        # assert issubclass(Segmentation, segmentation), msg
 
-    def _kernel_fn(self, x, z):
+    def _kernel_fn(self, segmentation, active_segments):
         kernel = self.kernel_width
         if kernel is None:
-            kernel = np.sqrt(len(z)) * ImageLIME.KERNEL_MULTIPLIER
+            kernel = np.sqrt(len(active_segments)) * ImageLIME.KERNEL_MULTIPLIER
         kernel = float(kernel)
+        
+        num_segments = np.unique(segmentation).shape[0]
+        all_segments = np.ones(num_segments)[np.newaxis,:]
 
         distances = pairwise_distances(
-            np.array(z).reshape(-1, 1),
-            np.array(x).reshape(1, -1),
+            active_segments,
+            all_segments,
             metric=self.distance_metric).ravel()
 
         kernel = np.sqrt(np.exp(-(distances ** 2) / kernel ** 2))
@@ -65,12 +69,12 @@ class ImageLIME(BaseLIME):
             active = np.argwhere(active_segments[k])
             sample = instance * 0
             for i in active:
-                sample = sample + get_seg_x(segmentation, i)[:, :, np.newaxis] * instance
-                neighborhood_data.append(sample)
+                sample = sample + get_seg_x(segmentation, i)[:,:,np.newaxis] * instance
+            neighborhood_data.append(sample)
 
         return np.array(neighborhood_data), active_segments
 
-    def explain_instance(self, image, main_model, labels=(1,), num_features=100000, num_samples=1000):
+    def explain_instance(self, image, main_model, labels=(1,), num_features=100000, num_samples=50):
         """
             image: numpy array of a single image (RGB or Grayscale)
             main_model: callable object or function returning prediction of an image
@@ -82,14 +86,20 @@ class ImageLIME(BaseLIME):
         """
         segs = self.segmentation_fn(image)  # segmentations before rgb2gray (some algorithms require 3 chanels)
         # check if rgb then change to grayscale
-        neigh_data, active_segs = self.neighborhood_generation(image, segs, num_samples)
-        neigh_weights = self._kernel_fn(neigh_data, active_segs)
-        neigh_labl = main_model(neigh_data)
+        if (len(image.shape) == 2):
+            image = gray2rgb(image)
+        neigh_data, active_segs = self._neighborhood_generation(image, segs, num_samples)
+        neigh_weights = self._kernel_fn(segs, active_segs)
+        neigh_labl = []
+        for neigh in neigh_data:
+            neigh_labl.append(main_model(neigh))
+            
+        neigh_labl = np.array(neigh_labl)
 
         results = {}
         for label in labels:
             res = self.base.explain_instance(
-                neigh_data, neigh_weights, neigh_labl, label, num_features,
+                active_segs, neigh_weights, neigh_labl, label, num_features,
                 feature_selection=self.feature_selection, simple_model=self.simple_model
             )
             results[label] = {
