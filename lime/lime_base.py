@@ -4,11 +4,12 @@ import scipy as sp
 
 from sklearn.linear_model import Ridge, Lasso
 from sklearn.tree import DecisionTreeRegressor
-from sklearn.svm import SVR
+from sklearn.base import clone
+from sklearn.svm import LinearSVR  # other SVM methods have no _coefs
 
 
 class BaseLIME:
-    MODELS = [Ridge, Lasso, DecisionTreeRegressor, SVR]
+    MODELS = [Ridge, Lasso, DecisionTreeRegressor, LinearSVR]
     METHODS = [None, 'forward_selection', 'highest_weights', 'lars_path']
 
     def __init__(self, random_state=123, alpha_penalty=None):
@@ -29,7 +30,7 @@ class BaseLIME:
             for feature in range(data.shape[1]):
                 if feature in used_features:
                     continue
-                clf.fit(data[:, used_features + [feature]], 
+                clf.fit(data[:, used_features + [feature]],
                         labels, sample_weight=weights)
                 score = clf.score(data[:, used_features + [feature]],
                                   labels, sample_weight=weights)
@@ -96,6 +97,9 @@ class BaseLIME:
         used_features = self._feature_selection(
             neighborhood_data, labels_column,
             neighborhood_weights, num_features, feature_selection)
+
+        # makes sure that weights are not passed in multiclass classification
+        simple_model = clone(simple_model)
 
         simple_model.fit(
             neighborhood_data[:, used_features],

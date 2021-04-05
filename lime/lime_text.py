@@ -1,28 +1,28 @@
 from lime_base import BaseLIME
-from segmentations import QuickShift, Segmentation
-from explainers import ImageExplainer
+from explainers import TextExplainer
+from indexers import Indexer, StringIndexer
 
 import numpy as np
 
 from sklearn.metrics import pairwise_distances
 
 
-class ImageLIME(BaseLIME):
+class TextLIME:
     KERNEL_MULTIPLIER = 0.75
 
     def __init__(self,
                  random_state=123,
                  simple_model=None,
                  kernel_width=None,
-                 segmentation=None,
+                 indexer=None,
                  alpha_penalty=None,
-                 distance_metric='cosine',
+                 distance_metric='l2',
                  feature_selection='highest_weights'):
         """
             random_state: integer randomness seed value
             simple_model: sklearn model for local explainations
             kernel_width: float
-            segmentation: object of subclass Segmentation with callable segmentation function
+            indexer: object of subclass Indexer with callable indexation function
             alpha_penalty: float L2 penalty term in ridge model for feature selection
             distance_metric: str type of metric used in kernel
             feature_selection: str type of feature selection method
@@ -33,15 +33,16 @@ class ImageLIME(BaseLIME):
         self.distance_metric = distance_metric
         self.feature_selection = feature_selection
 
-        if not segmentation:
-            self.segmentation_fn = QuickShift()
-        msg = 'Invalid segmentation type, use one implemented in segmentations.py'
-        assert issubclass(segmentation, Segmentation), msg
+        if not indexer:
+            # hyperparameters from baseline implementation
+            self.indexer_fn = StringIndexer()
+        msg = 'Invalid indexer type, use one implemented in indexer.py'
+        assert issubclass(indexer, Indexer), msg
 
     def _kernel_fn(self, x, z):
         kernel = self.kernel_width
         if kernel is None:
-            kernel = np.sqrt(len(z)) * ImageLIME.KERNEL_MULTIPLIER
+            kernel = np.sqrt(len(z)) * TextLIME.KERNEL_MULTIPLIER
         kernel = float(kernel)
 
         distances = pairwise_distances(
@@ -75,8 +76,25 @@ class ImageLIME(BaseLIME):
             labels: iterable with labels to be explained
             num_features: maximum number of features present in explanation
             num_samples: size of the neighborhood to learn the simple model
+
+            returns: ImageExplainer object with convenient access to instance explainations
         """
         segs = self.segmentation_fn(image)  # segmentations before rgb2gray (some algorithms require 3 chanels)
+        # check if rgb then change to grayscale
         neigh_data, active_segs = self.neighborhood_generation(image, segs, num_samples)
+        neigh_weights = self._kernel_fn(neigh_data, active_segs)
         neigh_labl = main_model(neigh_data)
-        return ImageExplainer(image, segs, **all_other_neccessary_data)
+
+        results = {}
+        for label in labels:
+            res = self.base.explain_instance(
+                neigh_data, neigh_weights, neigh_labl, label, num_features,
+                feature_selection=self.feature_selection, simple_model=self.simple_model
+            )
+            results[label] = {
+                'intercept': res[0],
+                'feature_importance': res[1],
+                'prediction_score': res[2],
+                'local_prediction': res[3]
+            }
+        return TextExplainer(text, segs, results)

@@ -13,14 +13,16 @@ class Explainer(ABC):
 
 
 class ImageExplainer(Explainer):
-    def __init__(self, image, segments):
-        pass
+    def __init__(self, image, segments, results):
+        self.image = image
+        self.segs = segments
+        self.results = results
 
     def visualize(self):
         pass
 
     def describe(self):
-        pass
+        return self.results
 
 
 class TextExplainer(Explainer):
