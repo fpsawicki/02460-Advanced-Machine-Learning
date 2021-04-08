@@ -5,7 +5,7 @@ from explainers import ImageExplainer
 import numpy as np
 
 from sklearn.metrics import pairwise_distances
-from skimage.color import rgb2gray
+from skimage.color import gray2rgb
 
 
 class ImageLIME(BaseLIME):
