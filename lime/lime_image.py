@@ -1,6 +1,6 @@
-from lime_base import BaseLIME
-from segmentations import QuickShift, Segmentation
-from explainers import ImageExplainer
+from lime.lime_base import BaseLIME
+from lime.explainers import ImageExplainer
+from lime.segmentations import QuickShift, Segmentation
 
 import numpy as np
 

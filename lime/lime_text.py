@@ -1,6 +1,6 @@
-from lime_base import BaseLIME
-from explainers import TextExplainer
-from indexers import Indexer, StringIndexer
+from lime.lime_base import BaseLIME
+from lime.explainers import TextExplainer
+from lime.indexers import Indexer, StringIndexer
 
 import numpy as np
 
