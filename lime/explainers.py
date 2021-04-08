@@ -23,7 +23,7 @@ class ImageExplainer(Explainer):
         def get_seg_x(seg, x):
             return (seg == x) * 1
         
-        top_features = self.results[label]['feature_importance'][n_top_features:]
+        top_features = self.results[label]['feature_importance'][:n_top_features]
 
         top_indexes = []
         for feature in top_features:
