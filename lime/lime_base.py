@@ -117,5 +117,7 @@ class BaseLIME:
             simple_model.intercept_ = np.zeros(neighborhood_labels.shape[1])
         else:
             feature_importance = sorted(zip(used_features, simple_model.coef_),
-                                        key=lambda x: np.abs(x[1]), reverse=True)
+                                        # key=lambda x: np.abs(x[1]), reverse=True)
+                                        # Changed to take into account only positive coefficients
+                                        key=lambda x: x[1], reverse=True)
         return (simple_model.intercept_, feature_importance, prediction_score, local_pred)
