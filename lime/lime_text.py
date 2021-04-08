@@ -36,8 +36,10 @@ class TextLIME:
         if not indexer:
             # hyperparameters from baseline implementation
             self.indexer_fn = StringIndexer()
-        msg = 'Invalid indexer type, use one implemented in indexer.py'
-        assert issubclass(indexer, Indexer), msg
+        #msg = 'Invalid indexer type, use one implemented in indexer.py'
+        #assert issubclass(indexer, Indexer), msg
+        else: 
+            self.indexer_fn = indexer
 
     def _kernel_fn(self, active_tokens):
         all_tokens = np.ones(active_tokens[0].shape[0])[np.newaxis, :]
@@ -54,15 +56,16 @@ class TextLIME:
         kernel = np.sqrt(np.exp(-(distances ** 2) / kernel ** 2))
         return kernel
 
-    def _neighborhood_generation(self, instance, indexed_string, num_samples):
+    def _neighborhood_generation(self, text, num_samples):
         neighborhood_data = []
-        num_indexes = np.unique(indexed_string).shape[0]
+        split_text = text.strip().replace('  ', '').replace(',', '').replace('.','').lower()
+        num_indexes = np.unique(split_text).shape[0]
         active_indexes = np.random.binomial(1, 0.5, size=(num_samples, num_indexes))
         for k in range(num_samples):
             active = np.argwhere(active_indexes[k])
-            sample = instance * 0
+            sample = np.array(split_text) * 0
             for i in active:
-                sample = sample + active * instance
+                sample = sample + active * split_text
             neighborhood_data.append(sample)
 
         return np.array(neighborhood_data), active_indexes
@@ -78,7 +81,7 @@ class TextLIME:
             returns: ImageExplainer object with convenient access to instance explainations
         """
         indexed_string = self.indexer_fn(text)
-        neigh_data, active_words = self.neighborhood_generation(text, indexed_string, num_samples)
+        neigh_data, active_words = self._neighborhood_generation(text, num_samples)
         neigh_weights = self._kernel_fn(active_words)
         neigh_labl = []
         for neigh in neigh_data:
