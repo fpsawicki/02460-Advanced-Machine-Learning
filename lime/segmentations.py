@@ -32,4 +32,5 @@ class Slic(Segmentation):
         self.function = partial(slic, **kwargs)
 
     def __call__(self, image):
-        return self.function(image)
+        image_mean = image.mean(axis=2)
+        return self.function(image_mean)
