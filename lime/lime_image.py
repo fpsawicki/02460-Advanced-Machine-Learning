@@ -38,6 +38,8 @@ class ImageLIME(BaseLIME):
             # hyperparameters from baseline implementation
             self.segmentation_fn = QuickShift(
                 kernel_size=4, max_dist=200, ratio=0.2, random_seed=random_state)
+        else:
+            self.segmentation_fn = segmentation
         # msg = 'Invalid segmentation type, use one implemented in segmentations.py'
         # assert issubclass(Segmentation, segmentation), msg
 
