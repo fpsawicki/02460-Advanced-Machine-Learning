@@ -38,7 +38,7 @@ class ImageLIME(BaseLIME):
             # hyperparameters from baseline implementation
             self.segmentation_fn = QuickShift(
                 kernel_size=4, max_dist=200, ratio=0.2, random_seed=random_state)
-        msg = 'Invalid segmentation type, use one implemented in segmentations.py'
+        # msg = 'Invalid segmentation type, use one implemented in segmentations.py'
         # assert issubclass(Segmentation, segmentation), msg
 
     def _kernel_fn(self, segmentation, active_segments):
@@ -46,9 +46,9 @@ class ImageLIME(BaseLIME):
         if kernel is None:
             kernel = np.sqrt(len(active_segments)) * ImageLIME.KERNEL_MULTIPLIER
         kernel = float(kernel)
-        
+
         num_segments = np.unique(segmentation).shape[0]
-        all_segments = np.ones(num_segments)[np.newaxis,:]
+        all_segments = np.ones(num_segments)[np.newaxis, :]
 
         distances = pairwise_distances(
             active_segments,
@@ -93,7 +93,7 @@ class ImageLIME(BaseLIME):
         neigh_labl = []
         for neigh in neigh_data:
             neigh_labl.append(main_model(neigh))
-            
+
         neigh_labl = np.array(neigh_labl)
 
         results = {}

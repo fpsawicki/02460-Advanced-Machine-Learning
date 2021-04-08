@@ -39,39 +39,37 @@ class TextLIME:
         msg = 'Invalid indexer type, use one implemented in indexer.py'
         assert issubclass(indexer, Indexer), msg
 
-    def _kernel_fn(self, x, z):
+    def _kernel_fn(self, active_tokens):
+        all_tokens = np.ones(active_tokens[0].shape[0])[np.newaxis, :]
+        distances = pairwise_distances(
+            active_tokens,
+            all_tokens,
+            metric=self.distance_metric).ravel()
+
         kernel = self.kernel_width
         if kernel is None:
-            kernel = np.sqrt(len(z)) * TextLIME.KERNEL_MULTIPLIER
+            kernel = np.sqrt(len(distances)) * TextLIME.KERNEL_MULTIPLIER
         kernel = float(kernel)
-
-        distances = pairwise_distances(
-            np.array(z).reshape(-1, 1),
-            np.array(x).reshape(1, -1),
-            metric=self.distance_metric).ravel()
 
         kernel = np.sqrt(np.exp(-(distances ** 2) / kernel ** 2))
         return kernel
 
-    def _neighborhood_generation(self, instance, segmentation, num_samples):
-        def get_seg_x(seg, x):
-            return (seg == x) * 1
-
+    def _neighborhood_generation(self, instance, indexed_string, num_samples):
         neighborhood_data = []
-        num_segmemts = np.unique(segmentation).shape[0]
-        active_segments = np.random.binomial(1, 0.5, size=(num_samples, num_segmemts))
+        num_indexes = np.unique(indexed_string).shape[0]
+        active_indexes = np.random.binomial(1, 0.5, size=(num_samples, num_indexes))
         for k in range(num_samples):
-            active = np.argwhere(active_segments[k])
+            active = np.argwhere(active_indexes[k])
             sample = instance * 0
             for i in active:
-                sample = sample + get_seg_x(segmentation, i)[:, :, np.newaxis] * instance
-                neighborhood_data.append(sample)
+                sample = sample + active * instance
+            neighborhood_data.append(sample)
 
-        return np.array(neighborhood_data), active_segments
+        return np.array(neighborhood_data), active_indexes
 
-    def explain_instance(self, image, main_model, labels=(1,), num_features=100000, num_samples=1000):
+    def explain_instance(self, text, main_model, labels=(1,), num_features=100000, num_samples=1000):
         """
-            image: numpy array of a single image (RGB or Grayscale)
+            text: numpy array of a single image (RGB or Grayscale)
             main_model: callable object or function returning prediction of an image
             labels: iterable with labels to be explained
             num_features: maximum number of features present in explanation
@@ -79,16 +77,19 @@ class TextLIME:
 
             returns: ImageExplainer object with convenient access to instance explainations
         """
-        segs = self.segmentation_fn(image)  # segmentations before rgb2gray (some algorithms require 3 chanels)
-        # check if rgb then change to grayscale
-        neigh_data, active_segs = self.neighborhood_generation(image, segs, num_samples)
-        neigh_weights = self._kernel_fn(neigh_data, active_segs)
-        neigh_labl = main_model(neigh_data)
+        indexed_string = self.indexer_fn(text)
+        neigh_data, active_words = self.neighborhood_generation(text, indexed_string, num_samples)
+        neigh_weights = self._kernel_fn(active_words)
+        neigh_labl = []
+        for neigh in neigh_data:
+            neigh_labl.append(main_model(neigh))
+
+        neigh_labl = np.array(neigh_labl)
 
         results = {}
         for label in labels:
             res = self.base.explain_instance(
-                neigh_data, neigh_weights, neigh_labl, label, num_features,
+                active_words, neigh_weights, neigh_labl, label, num_features,
                 feature_selection=self.feature_selection, simple_model=self.simple_model
             )
             results[label] = {
@@ -97,4 +98,4 @@ class TextLIME:
                 'prediction_score': res[2],
                 'local_prediction': res[3]
             }
-        return TextExplainer(text, segs, results)
+        return TextExplainer(text, active_words, results)

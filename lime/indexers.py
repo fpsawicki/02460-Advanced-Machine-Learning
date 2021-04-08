@@ -9,6 +9,14 @@ class Indexer(ABC):
         pass
 
 
+class StringTokenizer(Indexer):
+    def __init__(self, tokenizer):
+        self.tokenizer = tokenizer
+
+    def __call__(self, text):
+        return self.tokenizer(text)
+
+
 class StringIndexer(Indexer):
     def __init__(self, mask_string='<UNKNOWN>'):
         pass
