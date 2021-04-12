@@ -44,11 +44,13 @@ class ImageExplainer(Explainer):
 
 
 class TextExplainer(Explainer):
-    def __init__(self, image, segments):
-        pass
+    def __init__(self, text, active_words, results):
+        self.text = text
+        self.active_words = active_words
+        self.results = results
 
     def visualize(self):
         pass
 
     def describe(self):
-        pass
+        return self.results
