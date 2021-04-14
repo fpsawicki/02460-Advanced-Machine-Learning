@@ -39,6 +39,8 @@ class ImageExplainer(Explainer):
         plt.imshow(img_to_show)
         plt.show()
 
+        return img_to_show
+
     def describe(self):
         return self.results
 
