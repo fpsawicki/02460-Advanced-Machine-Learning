@@ -2,12 +2,12 @@ from lime.lime_base import BaseLIME
 from lime.explainers import TextExplainer
 from lime.indexers import Indexer, StringIndexer
 
+import copy
 import numpy as np
 
 from sklearn.metrics import pairwise_distances
 from scipy.linalg import circulant
 
-import copy
 
 class TextLIME:
     KERNEL_MULTIPLIER = 0.75
@@ -41,7 +41,7 @@ class TextLIME:
         self.distance_metric = distance_metric
         self.feature_selection = feature_selection
         self.inactive_string = inactive_string
-        
+
         if not neighbour_parameter:
             if neighbour_version == 'random_uniform':
                 neighbour_parameter = 0.5
@@ -49,16 +49,15 @@ class TextLIME:
                 neighbour_parameter = 3
             elif neighbour_version == 'random_normal':
                 neighbour_parameter = 2
-        self.neighbour_parameter=neighbour_parameter
-        self.neighbour_version=neighbour_version
-                
+        self.neighbour_parameter = neighbour_parameter
+        self.neighbour_version = neighbour_version
 
         if not indexer:
             # hyperparameters from baseline implementation
             self.indexer_fn = StringIndexer()
-        #msg = 'Invalid indexer type, use one implemented in indexer.py'
-        #assert issubclass(indexer, Indexer), msg
-        else: 
+        # msg = 'Invalid indexer type, use one implemented in indexer.py'
+        # assert issubclass(indexer, Indexer), msg
+        else:
             self.indexer_fn = indexer
 
     def _kernel_fn(self, active_tokens):
@@ -75,7 +74,7 @@ class TextLIME:
 
         kernel = np.sqrt(np.exp(-(distances ** 2) / kernel ** 2))
         return kernel
-    
+
     def _normal_tokens(self, num_samples, num_tokens, spread):
         center = np.random.randint(0, num_tokens + 1, num_samples)
         idx_normal = []
@@ -93,14 +92,14 @@ class TextLIME:
             tmp = np.zeros(num_indexes)
             tmp[0:self.neighbour_parameter] = 1
             active_indexes = circulant(tmp)[:num_samples]
-        elif self.neighbour_version == 'one_on':  
+        elif self.neighbour_version == 'one_on':
             active_indexes = np.eye(num_indexes)[:num_samples]
-        elif self.neighbour_version == 'one_off':  
-            active_indexes = (np.ones(num_indexes)-np.eye(num_indexes))[:num_samples] 
-        elif self.neighbour_version == 'random_normal': 
+        elif self.neighbour_version == 'one_off':
+            active_indexes = (np.ones(num_indexes)-np.eye(num_indexes))[:num_samples]
+        elif self.neighbour_version == 'random_normal':
             active_indexes = self._normal_tokens(num_samples, num_indexes, self.neighbour_parameter)
         for act_idx in active_indexes:
-            inactive = np.argwhere(act_idx==0)
+            inactive = np.argwhere(act_idx == 0)
             sample = copy.deepcopy(token_string)
             for inact in inactive:
                 sample[inact[0]] = self.inactive_string
@@ -123,7 +122,7 @@ class TextLIME:
         neigh_weights = self._kernel_fn(active_words)
         neigh_labl = []
         for neigh in neigh_data:
-            neigh_text=' '.join(neigh)
+            neigh_text = ' '.join(neigh)
             neigh_labl.append(main_model(neigh_text))
         neigh_labl = np.array(neigh_labl)
 

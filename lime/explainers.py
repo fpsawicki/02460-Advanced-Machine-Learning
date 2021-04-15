@@ -22,17 +22,17 @@ class ImageExplainer(Explainer):
     def visualize(self, n_top_features, label):
         def get_seg_x(seg, x):
             return (seg == x) * 1
-        
+
         top_features = self.results[label]['feature_importance'][:n_top_features]
 
         top_indexes = []
         for feature in top_features:
             top_indexes.append(feature[0])
-      
+
         explained_image = 0
         for i in range(len(top_indexes)):
             explained_image += get_seg_x(self.segs, top_indexes[i])
-      
+
         img_to_show = self.image.copy()
         img_to_show[explained_image == 0] = 0
         plt.figure()

@@ -1,7 +1,6 @@
 from abc import ABC
 import nltk
 from nltk.util import ngrams
-import numpy as np
 
 
 class Indexer(ABC):
@@ -18,14 +17,15 @@ class StringTokenizer(Indexer):
 
     def __call__(self, text):
         return self.tokenizer(text)
-    
+
+
 class NgramTokenizer(Indexer):
     def __init__(self):
         nltk.download('punkt')
 
     def extract_ngrams_x(self, data, num):
         n_grams = ngrams(nltk.word_tokenize(data), num)
-        return [ ' '.join(grams) for grams in n_grams]
+        return [' '.join(grams) for grams in n_grams]
 
     def extract_ngrams(self, data, num):
         return [self.extract_ngrams_x(doc, num) for doc in data]
