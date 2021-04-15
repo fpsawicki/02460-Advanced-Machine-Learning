@@ -1,5 +1,7 @@
 from abc import ABC
 import matplotlib.pyplot as plt
+
+from skimage.segmentation import mark_boundaries
 from IPython.core.display import HTML
 
 
@@ -23,6 +25,10 @@ class ImageExplainer(Explainer):
     def visualize(self, n_top_features, label):
         def get_seg_x(seg, x):
             return (seg == x) * 1
+
+        plt.figure
+        plt.imshow(mark_boundaries(self.image, self.segs))
+        plt.show()
 
         top_features = self.results[label]['feature_importance'][:n_top_features]
 

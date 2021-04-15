@@ -74,22 +74,25 @@ class ImageLIME(BaseLIME):
             active = np.argwhere(active_segments[k])
             sample = instance * 0
             for i in active:
-                sample = sample + get_seg_x(segmentation, i)[:,:,np.newaxis] * instance
+                sample = sample + get_seg_x(segmentation, i)[:, :, np.newaxis] * instance
             neighborhood_data.append(sample)
 
         return np.array(neighborhood_data), active_segments
 
-    def explain_instance(self, image, main_model, labels=(1,), num_features=100000, num_samples=50):
+    def explain_instance(self, image, main_model, segs=None, labels=(1,), num_features=100000, num_samples=50):
         """
             image: numpy array of a single image (RGB or Grayscale)
             main_model: callable object or function returning prediction of an image
+            segs: numpy array with image segmentations
             labels: iterable with labels to be explained
             num_features: maximum number of features present in explanation
             num_samples: size of the neighborhood to learn the simple model
 
             returns: ImageExplainer object with convenient access to instance explainations
         """
-        segs = self.segmentation_fn(image)  # segmentations before rgb2gray (some algorithms require 3 chanels)
+        if segs is None:
+            segs = self.segmentation_fn(image)  # segmentations before rgb2gray (some algorithms require 3 chanels)
+
         # check if rgb then change to grayscale
         if (len(image.shape) == 2):
             image = gray2rgb(image)
