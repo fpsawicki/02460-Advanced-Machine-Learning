@@ -15,6 +15,7 @@ class ImageLIME(BaseLIME):
                  random_state=123,
                  simple_model=None,
                  kernel_width=None,
+                 kernel_active=True,
                  segmentation=None,
                  alpha_penalty=None,
                  distance_metric='cosine',
@@ -23,6 +24,7 @@ class ImageLIME(BaseLIME):
             random_state: integer randomness seed value
             simple_model: sklearn model for local explainations
             kernel_width: float
+            kernel_active: bool if false return 1 for all neighbourhood distances
             segmentation: object of subclass Segmentation with callable segmentation function
             alpha_penalty: float L2 penalty term in ridge model for feature selection
             distance_metric: str type of metric used in kernel
@@ -31,6 +33,7 @@ class ImageLIME(BaseLIME):
         self.base = BaseLIME(random_state, alpha_penalty)
         self.simple_model = simple_model
         self.kernel_width = kernel_width
+        self.kernel_active = kernel_active
         self.distance_metric = distance_metric
         self.feature_selection = feature_selection
 
@@ -92,6 +95,8 @@ class ImageLIME(BaseLIME):
             image = gray2rgb(image)
         neigh_data, active_segs = self._neighborhood_generation(image, segs, num_samples)
         neigh_weights = self._kernel_fn(segs, active_segs)
+        if not self.kernel_active:
+            neigh_weights = np.ones_like(neigh_weights)
         neigh_labl = []
         for neigh in neigh_data:
             neigh_labl.append(main_model(neigh))

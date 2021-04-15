@@ -1,5 +1,6 @@
 from abc import ABC
 import matplotlib.pyplot as plt
+from IPython.core.display import HTML
 
 
 class Explainer(ABC):
@@ -51,8 +52,23 @@ class TextExplainer(Explainer):
         self.active_words = active_words
         self.results = results
 
-    def visualize(self):
-        pass
+    def visualize(self, label=None):
+        text = []
+        for label_id in self.results.keys():
+            if not label:
+                text.append(f"<h1>{label_id}</h1>")
+            else:
+                text.append(f"<h1>{label[label_id]}</h1>")
+            for idx, word in enumerate(self.text):
+                coef = [i[1] for i in self.results[label_id]['feature_importance'] if i[0] == idx]
+                if not coef:
+                    color = 'black'
+                else:
+                    color = 'red' if coef[0] < 0 else 'green'
+                    color = 'black' if coef[0] == 0 else color
+                text.append(f"<span style='color: {color}'>{word}</span>")
+
+        return HTML(' '.join(text))
 
     def describe(self):
         return self.results
