@@ -1,4 +1,5 @@
 from abc import ABC
+
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -92,10 +93,9 @@ class TextExplainer(Explainer):
 
         for idx, label_id in enumerate(labels.keys()):
             coefs = self.results[label_id]['feature_importance']
-            coefs = sorted(coefs, key=lambda row: np.abs(row[1]))[:n_top_words]
+            coefs = sorted(coefs, key=lambda row: np.abs(row[1]), reverse=True)[:n_top_words]
 
             words = [self.text[c[0]] for c in coefs]
-            print(words)
             importances = np.array([c[1] for c in coefs])
             x = np.arange(len(words))
 
@@ -105,8 +105,8 @@ class TextExplainer(Explainer):
             mask_1 = importances >= 0
             mask_2 = importances < 0
 
-            ax[n_row, n_col].bar(x[mask_1] - 0.35, importances[mask_1], 0.35, label='Word', color='green')
-            ax[n_row, n_col].bar(x[mask_2] - 0.35, importances[mask_2], 0.35, label='Word', color='red')
+            ax[n_row, n_col].bar(x[mask_1], importances[mask_1], 0.35, label='Word', color='green')
+            ax[n_row, n_col].bar(x[mask_2], importances[mask_2], 0.35, label='Word', color='red')
             ax[n_row, n_col].axhline(0, color='black')
 
             ax[n_row, n_col].set_xticks(np.arange(len(words)))
