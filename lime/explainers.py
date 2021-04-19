@@ -61,6 +61,14 @@ class TextExplainer(Explainer):
         self.results = results
 
     def visualize_text(self, labels=None, min_importance=0.01):
+        """
+            labels: dict where key is index of prediction class and value is description of that class.
+                    - this can be a subset of all labels if ex. one class is of interest
+                    - default value will print all labels in prediction without descriptions
+            min_importance: float minimum absolute value of coefficient below which text is black
+
+            returns: HTML object with text coloring to be viewed in jupyter notebook
+        """
         text = []
         if not labels:
             labels = {i: f'Label #{i}' for i in self.results.keys()}
@@ -77,6 +85,14 @@ class TextExplainer(Explainer):
         return HTML(' '.join(text))
 
     def visualize_words(self, labels=None, n_top_words=5):
+        """
+            labels: dict where key is index of prediction class and value is description of that class.
+                    - this can be a subset of all labels if ex. one class is of interest
+                    - default value will print all labels in prediction without descriptions
+            n_top_words: int number of words with highest absolute value in coefficients
+
+            returns: pyplot with word importance per each label
+        """
         if not labels:
             labels = {i: f'Label #{i}' for i in self.results.keys()}
 
