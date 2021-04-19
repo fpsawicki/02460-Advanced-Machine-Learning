@@ -109,7 +109,7 @@ class TextLIME:
             neighborhood_data.append(sample)
         return neighborhood_data, active_indexes
 
-    def explain_instance(self, text, main_model, labels=(0,1,2,3), num_features=100000, num_samples=1000):
+    def explain_instance(self, text, main_model, labels=(0,), num_features=100000, num_samples=1000):
         """
             text: numpy array of a single image (RGB or Grayscale)
             main_model: callable object or function returning prediction of an image

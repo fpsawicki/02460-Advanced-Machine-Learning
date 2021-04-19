@@ -79,7 +79,7 @@ class ImageLIME(BaseLIME):
 
         return np.array(neighborhood_data), active_segments
 
-    def explain_instance(self, image, main_model, segs=None, labels=(1,), num_features=100000, num_samples=50):
+    def explain_instance(self, image, main_model, segs=None, labels=(0,), num_features=100000, num_samples=50):
         """
             image: numpy array of a single image (RGB or Grayscale)
             main_model: callable object or function returning prediction of an image
