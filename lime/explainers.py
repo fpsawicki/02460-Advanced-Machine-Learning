@@ -148,6 +148,8 @@ class TextExplainer(Explainer):
         total_labels = len(labels.keys())
         n_cols = 3 if total_labels >= 3 else total_labels % 3
         n_rows = 1 if total_labels <= 1 else (total_labels + 2) // 3
+        print(n_cols, n_rows)
+
         fig, ax = plt.subplots(n_rows, n_cols, sharex=False, sharey='all')
         fig.suptitle('Word Importances')
 
@@ -165,19 +167,28 @@ class TextExplainer(Explainer):
             x = np.arange(len(words))
 
             n_col = (idx % 3)
-            n_row = (idx - 1) // 3
+            n_row = idx // 3
+            print(n_col, n_row)
 
             mask_1 = importances >= 0
             mask_2 = importances < 0
 
-            ax[n_row, n_col].bar(x[mask_1], importances[mask_1], 0.35, label='Word', color='green')
-            ax[n_row, n_col].bar(x[mask_2], importances[mask_2], 0.35, label='Word', color='red')
-            ax[n_row, n_col].axhline(0, color='black')
+            plot = None
+            if (n_rows == 1) and (n_cols == 1):
+                plot = ax
+            elif (n_rows == 1):
+                plot = ax[n_col]
+            else:
+                plot = ax[n_row, n_col]
 
-            ax[n_row, n_col].set_xticks(np.arange(len(words)))
-            ax[n_row, n_col].set_xticklabels(words, rotation=(45))
-            ax[n_row, n_col].set_title(f'{labels[label_id]}')
-            ax[n_row, n_col].set_visible(True)
+            plot.bar(x[mask_1], importances[mask_1], 0.35, label='Word', color='green')
+            plot.bar(x[mask_2], importances[mask_2], 0.35, label='Word', color='red')
+            plot.axhline(0, color='black')
+
+            plot.set_xticks(np.arange(len(words)))
+            plot.set_xticklabels(words, rotation=(45))
+            plot.set_title(f'{labels[label_id]}')
+            plot.set_visible(True)
 
         fig.tight_layout()
         plt.show()
