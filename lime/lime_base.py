@@ -48,7 +48,7 @@ class BaseLIME:
         if sp.sparse.issparse(data):
             # Optimization for sparse data
             coef = sp.sparse.csr_matrix(clf.coef_)
-            weighted_data = coef.multiply(data[0])
+            weighted_data = coef
             sdata = len(weighted_data.data)
             argsort_data = np.abs(weighted_data.data).argsort()
             if sdata < num_features:
@@ -69,7 +69,7 @@ class BaseLIME:
                 indices = weighted_data.indices[nnz_indexes]
             return indices
         else:
-            weighted_data = coef * data[0]
+            weighted_data = coef
             feature_weights = sorted(
                 zip(range(data.shape[1]), weighted_data),
                 key=lambda x: np.abs(x[1]), reverse=True)

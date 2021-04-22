@@ -16,6 +16,7 @@ class TextLIME:
                  random_state=123,
                  simple_model=None,
                  kernel_width=None,
+                 kernel_active=True,
                  indexer=None,
                  alpha_penalty=None,
                  distance_metric='l2',
@@ -27,6 +28,7 @@ class TextLIME:
             random_state: integer randomness seed value
             simple_model: sklearn model for local explainations
             kernel_width: float
+            kernel_active: bool if false return 1 for all neighbourhood distances
             indexer: object of subclass Indexer with callable indexation function
             alpha_penalty: float L2 penalty term in ridge model for feature selection
             distance_metric: str type of metric used in kernel
@@ -38,6 +40,7 @@ class TextLIME:
         self.base = BaseLIME(random_state, alpha_penalty)
         self.simple_model = simple_model
         self.kernel_width = kernel_width
+        self.kernel_active = kernel_active
         self.distance_metric = distance_metric
         self.feature_selection = feature_selection
         self.inactive_string = inactive_string
@@ -104,10 +107,9 @@ class TextLIME:
             for inact in inactive:
                 sample[inact[0]] = self.inactive_string
             neighborhood_data.append(sample)
-        print(neighborhood_data)
         return neighborhood_data, active_indexes
 
-    def explain_instance(self, text, main_model, labels=(0,1,2,3), num_features=100000, num_samples=1000):
+    def explain_instance(self, text, main_model, labels=(0,), num_features=100000, num_samples=1000):
         """
             text: numpy array of a single image (RGB or Grayscale)
             main_model: callable object or function returning prediction of an image
@@ -120,6 +122,8 @@ class TextLIME:
         token_string = self.indexer_fn(text)
         neigh_data, active_words = self._neighborhood_generation(token_string, num_samples)
         neigh_weights = self._kernel_fn(active_words)
+        if not self.kernel_active:
+            neigh_weights = np.ones_like(neigh_weights)
         neigh_labl = []
         for neigh in neigh_data:
             neigh_text = ' '.join(neigh)
@@ -138,4 +142,4 @@ class TextLIME:
                 'prediction_score': res[2],
                 'local_prediction': res[3]
             }
-        return TextExplainer(text, active_words, results)
+        return TextExplainer(token_string, active_words, results)
