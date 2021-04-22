@@ -1,6 +1,7 @@
 from abc import ABC
 import matplotlib.pyplot as plt
 from skimage.segmentation import mark_boundaries
+import numpy as np
 
 class Explainer(ABC):
     def __init__(self):
@@ -44,7 +45,55 @@ class ImageExplainer(Explainer):
         plt.show()
 
         return img_to_show
-
+    
+    def liqud_visualize(self, label, pos_color = (153, 255, 153), neg_color = (255, 77, 77)):
+        np_result = np.array(self.results[label]['feature_importance'][:])
+        
+        pos_idx=[]
+        neg_idx=[]
+        pos_coef=[]
+        neg_coef=[]
+        for i in range(len(np_result)):
+          if np_result[i,1]>0:
+              pos_idx.append(np_result[i,0])
+              pos_coef.append(np_result[i,1])
+          else:
+              neg_idx.append(np_result[i,0])
+              neg_coef.append(np_result[i,1])
+      
+        pos_idx=np.array(pos_idx)
+        neg_idx=np.array(neg_idx)
+        pos_coef=np.array(pos_coef)
+        neg_coef=np.array(neg_coef)
+        
+        norm = 1/pos_coef.ravel().max()
+        pos_coef = pos_coef.ravel()*norm
+        norm = 1/neg_coef.ravel().min()
+        neg_coef = neg_coef.ravel()*norm
+      
+        # Positive part 
+        color = [col/255 for col in pos_color]
+        color = np.array([np.ones_like(self.segs)*color[0], np.ones_like(self.segs)*color[1], np.ones_like(self.segs)*color[2]])
+        color = np.moveaxis(color, 0, -1)
+      
+        seg_pos = np.array([(self.segs == idx)*abs(pos_coef[i]) for i, idx in enumerate(pos_idx)]).sum(axis = 0)
+        img_pos = np.array([seg_pos, seg_pos, seg_pos])
+        img_pos = np.moveaxis(img_pos, 0, -1)
+        img_pos = np.round(self.image*img_pos*color).astype(int)
+      
+        # Negative part 
+        color = [col/255 for col in neg_color]
+        color = np.array([np.ones_like(self.segs)*color[0], np.ones_like(self.segs)*color[1], np.ones_like(self.segs)*color[2]])
+        color = np.moveaxis(color, 0, -1)
+      
+        seg_neg = np.array([(self.segs == idx)*abs(neg_coef[i]) for i, idx in enumerate(neg_idx)]).sum(axis = 0)
+        img_neg = np.array([seg_neg, seg_neg, seg_neg])
+        img_neg = np.moveaxis(img_neg, 0, -1)
+        img_neg = np.round(self.image*img_neg*color).astype(int)
+        
+        plt.imshow(img_pos+img_neg)
+        plt.show()
+  
     def describe(self):
         return self.results
 
