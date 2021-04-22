@@ -133,12 +133,13 @@ class TextExplainer(Explainer):
                 text.append(f"<span style='color: {color}'>{word}</span>")
         return HTML(' '.join(text))
 
-    def visualize_words(self, labels=None, n_top_words=5):
+    def visualize_words(self, labels=None, n_top_words=5, show_coefs='all'):
         """
             labels: dict where key is index of prediction class and value is description of that class.
                     - this can be a subset of all labels if ex. one class is of interest
                     - default value will print all labels in prediction without descriptions
             n_top_words: int number of words with highest absolute value in coefficients
+            show_coefs: str (all, negative, positive) to show only coefficients with provided sign
 
             returns: pyplot with word importance per each label
         """
@@ -148,7 +149,6 @@ class TextExplainer(Explainer):
         total_labels = len(labels.keys())
         n_cols = 3 if total_labels >= 3 else total_labels % 3
         n_rows = 1 if total_labels <= 1 else (total_labels + 2) // 3
-        print(n_cols, n_rows)
 
         fig, ax = plt.subplots(n_rows, n_cols, sharex=False, sharey='all')
         fig.suptitle('Word Importances')
@@ -160,6 +160,10 @@ class TextExplainer(Explainer):
 
         for idx, label_id in enumerate(labels.keys()):
             coefs = self.results[label_id]['feature_importance']
+            if show_coefs == 'positive':
+                coefs = [c for c in coefs if c[1] >= 0]
+            if show_coefs == 'negative':
+                coefs = [c for c in coefs if c[1] <= 0]
             coefs = sorted(coefs, key=lambda row: np.abs(row[1]), reverse=True)[:n_top_words]
 
             words = [self.text[c[0]] for c in coefs]
@@ -168,7 +172,6 @@ class TextExplainer(Explainer):
 
             n_col = (idx % 3)
             n_row = idx // 3
-            print(n_col, n_row)
 
             mask_1 = importances >= 0
             mask_2 = importances < 0
