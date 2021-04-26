@@ -101,6 +101,8 @@ class TextLIME:
             active_indexes = (np.ones(num_indexes)-np.eye(num_indexes))[:num_samples]
         elif self.neighbour_version == 'random_normal':
             active_indexes = self._normal_tokens(num_samples, num_indexes, self.neighbour_parameter)
+        else:
+            raise Exception('Invalid neighbourhood generation selected!')
         for act_idx in active_indexes:
             inactive = np.argwhere(act_idx == 0)
             sample = copy.deepcopy(token_string)
