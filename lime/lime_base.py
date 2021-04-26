@@ -3,13 +3,14 @@ import numpy as np
 import scipy as sp
 
 from sklearn.linear_model import Ridge, Lasso
+from sklearn.ensemble import RandomForestRegressor
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.base import clone
 from sklearn.svm import LinearSVR  # other SVM methods have no _coefs
 
 
 class BaseLIME:
-    MODELS = [Ridge, Lasso, DecisionTreeRegressor, LinearSVR]
+    MODELS = [Ridge, Lasso, DecisionTreeRegressor, LinearSVR, RandomForestRegressor]
     METHODS = [None, 'forward_selection', 'highest_weights', 'lars_path']
 
     def __init__(self, random_state=123, alpha_penalty=None):
@@ -88,9 +89,9 @@ class BaseLIME:
 
     def explain_instance(self, neighborhood_data, neighborhood_weights, neighborhood_labels,
                          label, num_features, feature_selection, simple_model=None):
-        if not simple_model:
+        if simple_model is None:
             simple_model = Ridge(alpha=1, fit_intercept=True, random_state=self.random_state)
-        assert type(simple_model) in BaseLIME.MODELS, f'Invalid simple_model type choose from: {BaseLIME.MODLES}'
+        assert type(simple_model) in BaseLIME.MODELS, f'Invalid simple_model type choose from: {BaseLIME.MODELS}'
         if simple_model.random_state != self.random_state:
             warnings.warn('random_state of a simple_model is not equal to LIME random_state!')
         labels_column = neighborhood_labels[:, label]
@@ -109,7 +110,7 @@ class BaseLIME:
             labels_column, sample_weight=neighborhood_weights)
 
         local_pred = simple_model.predict(neighborhood_data[0, used_features].reshape(1, -1))
-        if type(simple_model) is DecisionTreeRegressor:
+        if type(simple_model) in [DecisionTreeRegressor, RandomForestRegressor]:
             feature_importance = sorted(zip(used_features, simple_model.feature_importances_),
                                         key=lambda x: np.abs(x[1]), reverse=True)
             simple_model.intercept_ = np.zeros(neighborhood_labels.shape[1])
