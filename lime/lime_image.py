@@ -1,9 +1,8 @@
 from lime.lime_base import BaseLIME
 from lime.explainers import ImageExplainer
 from lime.segmentations import QuickShift, Segmentation
-
+from skimage.measure import regionprops
 import numpy as np
-
 from sklearn.metrics import pairwise_distances
 from skimage.color import gray2rgb
 
@@ -63,7 +62,9 @@ class ImageLIME(BaseLIME):
         kernel = np.sqrt(np.exp(-(distances ** 2) / kernel ** 2))
         return kernel
 
-    def _neighborhood_generation(self, instance, segmentation, num_samples):
+    def _neighborhood_generation_random(self, instance, segmentation, num_samples):
+        # Randomly turning each pixel on and off
+        
         def get_seg_x(seg, x):
             return (seg == x) * 1
 
@@ -78,11 +79,102 @@ class ImageLIME(BaseLIME):
             neighborhood_data.append(sample)
 
         return np.array(neighborhood_data), active_segments
+    
+    def _neighborhood_generation_one(self, instance, segmentation, num_samples):
+        # Randomly turning one pixel on at a time
+        
+        # Instance the image whoes prediction we want to explain
+        # Segmentation (fx from quickshift(im))
+        # num_samples the number of samples
+        
+        def get_seg_x(seg, x):
+            return (seg == x) * 1
+        
+        num_segments = np.unique(segmentation).shape[0]
+        
+        # Get the samples
+        neighborhood_data = []
+        active_segments = np.zeros((num_samples,num_segments))
+        active_segments[:,0] = 1
+        np.apply_along_axis(np.random.shuffle,1,active_segments) 
+      
+        for i in range(active_segments.shape[0]):
+          main_pixel = np.where(active_segments[i] == 1)[0][0]
+      
+        for k in range(num_samples):
+          active = np.argwhere(active_segments[k])
+          sample = instance*0
+          for i in active:
+            sample = sample + get_seg_x(segmentation,i)[:,:,np.newaxis]*instance
+          neighborhood_data.append(sample)
+      
+        # Get lables for the samples 
+        #neighborhood_labels = model_predict(neighborhood_data)
+      
+        return np.array(neighborhood_data), active_segments
+    
+    def _neighborhood_generation_radio(self, instance, segmentation, num_samples, radio):
+        # Instance the image whoes prediction we want to explain
+        # Segmentation (fx from quickshift(im))
+        # num_samples the number of samples
+        
+        def get_seg_x(seg, x):
+            return (seg == x) * 1
+      
+        segmentation_plus1 = segmentation + 1 # because regionprops ignores label 0, so it yields 1 superpixel less
+        seg_3d = np.moveaxis(np.array([segmentation_plus1,segmentation_plus1,segmentation_plus1]),0,-1)
+        properties = regionprops(seg_3d, instance)
+        coords = np.array([properties[i].weighted_centroid for i in range(len(properties))]).T
+        x_s = coords[1]
+        y_s = coords[0]
+      
+        # plt.imshow(seg)
+        # plt.scatter(y = y_s, x = x_s)
+      
+        x_s = x_s.reshape((1,x_s.shape[0]))
+        y_s = y_s.reshape((1,y_s.shape[0]))
+      
+        x_s_ax1 = np.tile(x_s.T,(1,x_s.shape[1])) # matrix with x_s repeated along axis 1 direction (x_s is in column vector shape)
+        x_s_ax0 = np.tile(x_s,(x_s.shape[1],1)) # x_s repeated along axis 0 direction (x_s is in row vector shape)#
+        y_s_ax1 = np.tile(y_s.T,(1,y_s.shape[1])) # y_s repeated along axis 1 direction (y_s is in column vector shape)
+        y_s_ax0 = np.tile(y_s,(y_s.shape[1],1)) # y_s repeated along axis 0 direction (y_s is in in row vector shape)
+      
+        x_dist = x_s_ax1 - x_s_ax0
+        y_dist = y_s_ax1 - y_s_ax0
+      
+        dist = np.sqrt(np.power(x_dist,2) + np.power(y_dist,2))
+      
+        num_segments = np.unique(segmentation).shape[0]
+      
+        # Get the samples
+        neighborhood_data = []
+        active_segments = np.zeros((num_samples,num_segments))
+        active_segments[:,0] = 1
+        np.apply_along_axis(np.random.shuffle,1,active_segments)
+      
+        for i in range(active_segments.shape[0]):
+          main_pixel = np.where(active_segments[i] == 1)[0][0]
+          neighboring_pixels = np.where(dist[main_pixel,:] <= radio)[0]
+          active_segments[i,neighboring_pixels] = 1
+      
+        for k in range(num_samples):
+          active = np.argwhere(active_segments[k])
+          sample = instance*0
+          for i in active:
+            sample = sample + get_seg_x(segmentation,i)[:,:,np.newaxis]*instance
+          neighborhood_data.append(sample)
+      
+        # Get lables for the samples 
+        #neighborhood_labels = model_predict(neighborhood_data)
+      
+        return neighborhood_data, active_segments# neighborhood_labels
 
-    def explain_instance(self, image, main_model, segs=None, labels=(0,), num_features=100000, num_samples=50):
+    def explain_instance(self, image, main_model, neighborhood_type='random', radio=None, segs=None, labels=(0,), num_features=100000, num_samples=50):
         """
             image: numpy array of a single image (RGB or Grayscale)
             main_model: callable object or function returning prediction of an image
+            neighborhood_type: techinque used to generate neighbors
+            radio: only when neighborhood_type = 'radio'. Radio for generating the neighbors
             segs: numpy array with image segmentations
             labels: iterable with labels to be explained
             num_features: maximum number of features present in explanation
@@ -92,11 +184,18 @@ class ImageLIME(BaseLIME):
         """
         if segs is None:
             segs = self.segmentation_fn(image)  # segmentations before rgb2gray (some algorithms require 3 chanels)
-
+        
+        if neighborhood_type == 'random':
+             neigh_data, active_segs = self._neighborhood_generation_random(image, segs, num_samples)
+        elif neighborhood_type == 'one':
+             neigh_data, active_segs = self._neighborhood_generation_one(image, segs, num_samples)
+        elif neighborhood_type == 'radio':
+             neigh_data, active_segs = self._neighborhood_generation_radio(image, segs, num_samples, radio) 
+        
         # check if rgb then change to grayscale
         if (len(image.shape) == 2):
             image = gray2rgb(image)
-        neigh_data, active_segs = self._neighborhood_generation(image, segs, num_samples)
+        # neigh_data, active_segs = neigh_function()
         neigh_weights = self._kernel_fn(segs, active_segs)
         if not self.kernel_active:
             neigh_weights = np.ones_like(neigh_weights)
