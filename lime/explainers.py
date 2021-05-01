@@ -51,7 +51,8 @@ class ImageExplainer(Explainer):
 
         return img_to_show
     
-    def liqud_visualize(self, label, pos_color = (153, 255, 153), neg_color = (255, 77, 77), retur = False):
+    def liqud_visualize(self, label, pos_color = (153, 255, 153),neg_color = (255, 77, 77),
+                        retur = False, boundaries = True):
         np_result = np.array(self.results[label]['feature_importance'][:])
         
         pos_idx=[]
@@ -97,7 +98,10 @@ class ImageExplainer(Explainer):
         img_neg = np.round(self.image*img_neg*color).astype(int)
         
         colored_explanation = img_pos+img_neg
-        colored_explanation = mark_boundaries(colored_explanation.astype(np.uint8), self.segs)
+        
+        if boundaries == True:
+            colored_explanation = mark_boundaries(colored_explanation.astype(np.uint8), self.segs)
+        
         if retur==False:
             plt.imshow(colored_explanation)
             plt.show()
