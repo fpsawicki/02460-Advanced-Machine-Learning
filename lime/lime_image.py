@@ -220,8 +220,10 @@ class ImageLIME(BaseLIME):
         
         if neighborhood_type == 'random':
              neigh_data, active_segs = self._neighborhood_generation_random(image, segs, num_samples)
-        elif neighborhood_type == 'one':
-             neigh_data, active_segs = self._neighborhood_generation_one(image, segs, num_samples)
+        elif neighborhood_type == 'oneOn':
+             neigh_data, active_segs = self._neighborhood_generation_oneOn(image, segs, num_samples)
+        elif neighborhood_type == 'oneOff':
+             neigh_data, active_segs = self._neighborhood_generation_oneOff(image, segs, num_samples)
         elif neighborhood_type == 'radio':
              neigh_data, active_segs = self._neighborhood_generation_radio(image, segs, num_samples, radio) 
         
