@@ -80,7 +80,7 @@ class ImageLIME(BaseLIME):
 
         return np.array(neighborhood_data), active_segments
     
-    def _neighborhood_generation_one(self, instance, segmentation, num_samples):
+    def _neighborhood_generation_oneOn(self, instance, segmentation, num_samples):
         # Randomly turning one pixel on at a time
         
         # Instance the image whoes prediction we want to explain
@@ -96,6 +96,39 @@ class ImageLIME(BaseLIME):
         neighborhood_data = []
         active_segments = np.zeros((num_samples,num_segments))
         active_segments[:,0] = 1
+        np.apply_along_axis(np.random.shuffle,1,active_segments) 
+      
+        for i in range(active_segments.shape[0]):
+          main_pixel = np.where(active_segments[i] == 1)[0][0]
+      
+        for k in range(num_samples):
+          active = np.argwhere(active_segments[k])
+          sample = instance*0
+          for i in active:
+            sample = sample + get_seg_x(segmentation,i)[:,:,np.newaxis]*instance
+          neighborhood_data.append(sample)
+      
+        # Get lables for the samples 
+        #neighborhood_labels = model_predict(neighborhood_data)
+      
+        return np.array(neighborhood_data), active_segments
+    
+    def _neighborhood_generation_oneOff(self, instance, segmentation, num_samples):
+        # Randomly turning one pixel on at a time
+        
+        # Instance the image whoes prediction we want to explain
+        # Segmentation (fx from quickshift(im))
+        # num_samples the number of samples
+        
+        def get_seg_x(seg, x):
+            return (seg == x) * 1
+        
+        num_segments = np.unique(segmentation).shape[0]
+        
+        # Get the samples
+        neighborhood_data = []
+        active_segments = np.ones((num_samples,num_segments))
+        active_segments[:,0] = 0
         np.apply_along_axis(np.random.shuffle,1,active_segments) 
       
         for i in range(active_segments.shape[0]):
