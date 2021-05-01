@@ -96,11 +96,13 @@ class ImageExplainer(Explainer):
         img_neg = np.moveaxis(img_neg, 0, -1)
         img_neg = np.round(self.image*img_neg*color).astype(int)
         
+        colored_explanation = img_pos+img_neg
+        colored_explanation = mark_boundaries(colored_explanation.astype(np.uint8), self.segs)
         if retur==False:
-            plt.imshow(img_pos+img_neg)
+            plt.imshow(colored_explanation)
             plt.show()
         else:
-            return (img_pos+img_neg)
+            return colored_explanation
             
         
   
