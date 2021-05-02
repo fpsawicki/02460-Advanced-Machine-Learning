@@ -29,9 +29,9 @@ class ImageExplainer(Explainer):
         def get_seg_x(seg, x):
             return (seg == x) * 1
 
-        plt.figure
-        plt.imshow(mark_boundaries(self.image, self.segs))
-        plt.show()
+        # plt.figure
+        # plt.imshow(mark_boundaries(self.image, self.segs))
+        # plt.show()
 
         top_features = self.results[label]['feature_importance'][:n_top_features]
 
@@ -45,13 +45,14 @@ class ImageExplainer(Explainer):
 
         img_to_show = self.image.copy()
         img_to_show[explained_image == 0] = 0
-        plt.figure()
-        plt.imshow(img_to_show)
-        plt.show()
+        # plt.figure()
+        # plt.imshow(img_to_show)
+        # plt.show()
 
         return img_to_show
     
-    def liqud_visualize(self, label, pos_color = (153, 255, 153), neg_color = (255, 77, 77)):
+    def liqud_visualize(self, label, pos_color = (153, 255, 153),neg_color = (255, 77, 77),
+                        retur = False, boundaries = True):
         np_result = np.array(self.results[label]['feature_importance'][:])
         
         pos_idx=[]
@@ -96,8 +97,18 @@ class ImageExplainer(Explainer):
         img_neg = np.moveaxis(img_neg, 0, -1)
         img_neg = np.round(self.image*img_neg*color).astype(int)
         
-        plt.imshow(img_pos+img_neg)
-        plt.show()
+        colored_explanation = img_pos+img_neg
+        
+        if boundaries == True:
+            colored_explanation = mark_boundaries(colored_explanation.astype(np.uint8), self.segs)
+        
+        if retur==False:
+            plt.imshow(colored_explanation)
+            plt.show()
+        else:
+            return colored_explanation
+            
+        
   
     def describe(self):
         return self.results
