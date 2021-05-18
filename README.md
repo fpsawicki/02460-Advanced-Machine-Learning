@@ -2,9 +2,9 @@
 
 DTU 02460 Advanced Machine Learning project on interpretable machine learning for deep learning models.
 
-Our Report: [click](https://github.com/fpsawicki/02460-Advanced-Machine-Learning/Report.pdf)
+Our Report: [click](https://github.com/fpsawicki/02460-Advanced-Machine-Learning/blob/master/Report.pdf)
 
-Our Presentation: [click](https://github.com/fpsawicki/02460-Advanced-Machine-Learning/Presentation.pdf)
+Our Presentation: [click](https://github.com/fpsawicki/02460-Advanced-Machine-Learning/blob/master/Presentation.pdf)
 
 Original Research Paper: https://arxiv.org/abs/1602.04938
 
